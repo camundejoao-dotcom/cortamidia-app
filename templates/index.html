@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Corta Mídia</title>
+  <title>Corta Mídia Offline</title>
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
     body {
@@ -49,20 +49,15 @@
       color: #94a3b8;
     }
 
-    input {
+    input[type="file"], input[type="text"] {
       width: 100%;
       padding: 12px;
       background-color: #0f172a;
       border: 1px solid #334155;
       border-radius: 8px;
       color: #fff;
-      font-size: 1rem;
+      font-size: 0.9rem;
       outline: none;
-      transition: border-color 0.2s;
-    }
-
-    input:focus {
-      border-color: #38bdf8;
     }
 
     .row {
@@ -85,11 +80,6 @@
       font-weight: bold;
       cursor: pointer;
       margin-top: 10px;
-      transition: background-color 0.2s;
-    }
-
-    button:hover {
-      background-color: #0369a1;
     }
 
     button:disabled {
@@ -102,49 +92,56 @@
       font-size: 0.875rem;
       text-align: center;
       line-height: 1.4;
-      min-height: 20px;
+      word-break: break-word;
     }
 
-    .info-text {
-      font-size: 0.75rem;
-      color: #64748b;
-      text-align: center;
-      margin-top: 12px;
+    .badge {
+      display: inline-block;
+      background: #10b981;
+      color: #000;
+      font-size: 0.7rem;
+      font-weight: bold;
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-bottom: 10px;
     }
   </style>
+
+  <!-- Carrega a engine do FFmpeg direto no navegador -->
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 </head>
 <body>
 
   <div class="card">
-    <h1>Corta Mídia</h1>
+    <div style="text-align: center;"><span class="badge">100% OFFLINE</span></div>
+    <h1>Corta Mídia Local</h1>
     
     <form id="cutForm">
       <div class="form-group">
-        <label for="url">URL do Vídeo</label>
-        <input type="url" id="url" placeholder="https://www.youtube.com/watch?v=..." required>
+        <label for="videoFile">Selecione o Vídeo (MP4, MKV, etc)</label>
+        <input type="file" id="videoFile" accept="video/*" required>
       </div>
 
       <div class="row">
         <div class="form-group">
           <label for="start">Início (HH:MM:SS)</label>
-          <input type="text" id="start" placeholder="00:00:10" value="00:00:00" required>
+          <input type="text" id="start" value="00:00:00" placeholder="00:00:00" required>
         </div>
         <div class="form-group">
           <label for="end">Fim (HH:MM:SS)</label>
-          <input type="text" id="end" placeholder="00:00:30" required>
+          <input type="text" id="end" value="00:00:10" placeholder="00:00:10" required>
         </div>
       </div>
 
-      <button type="submit" id="submitBtn">Processar e Baixar</button>
+      <button type="submit" id="submitBtn">Cortar e Salvar</button>
     </form>
 
     <div id="status"></div>
-    <div class="info-text">Nota: A primeira requisição pode levar cerca de 50s para o servidor inicializar.</div>
   </div>
 
   <script>
-    // URL do servidor no Render
-    const API_URL = 'https://cortamidia-backend.onrender.com';
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({ log: true });
 
     const form = document.getElementById('cutForm');
     const submitBtn = document.getElementById('submitBtn');
@@ -153,50 +150,63 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const url = document.getElementById('url').value.trim();
+      const fileInput = document.getElementById('videoFile');
+      const file = fileInput.files[0];
       const start = document.getElementById('start').value.trim();
       const end = document.getElementById('end').value.trim();
 
-      // Atualiza interface para estado de carregamento
+      if (!file) return;
+
       submitBtn.disabled = true;
-      submitBtn.innerText = 'Processando...';
+      submitBtn.innerText = 'Carregando Engine...';
       statusDiv.style.color = '#38bdf8';
-      statusDiv.innerText = 'Baixando e cortando a mídia no servidor... Por favor, aguarde.';
+      statusDiv.innerText = 'Inicializando o FFmpeg no aparelho...';
 
       try {
-        const response = await fetch(`${API_URL}/cut`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ url, start, end })
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Erro ao processar mídia no servidor.');
+        if (!ffmpeg.isLoaded()) {
+          await ffmpeg.load();
         }
 
-        statusDiv.style.color = '#4ade80';
-        statusDiv.innerText = 'Corte concluído! Iniciando download...';
+        submitBtn.innerText = 'Processando...';
+        statusDiv.innerText = 'Cortando o vídeo localmente...';
 
-        // Recebe o arquivo em Blob e dispara o download automático
-        const blob = await response.blob();
-        const downloadUrl = window.URL.createObjectURL(blob);
+        // Carrega o arquivo para o sistema de arquivos virtual do WebAssembly
+        const inputName = 'input_video.mp4';
+        const outputName = 'corte_output.mp4';
+        
+        ffmpeg.FS('writeFile', inputName, await fetchFile(file));
+
+        // Executa o corte ultra-rápido sem re-codificação (-c copy)
+        await ffmpeg.run(
+          '-ss', start,
+          '-to', end,
+          '-i', inputName,
+          '-c', 'copy',
+          outputName
+        );
+
+        // Lê o resultado da memória
+        const data = ffmpeg.FS('readFile', outputName);
+
+        // Gera o download do arquivo no celular
+        const blob = new Blob([data.buffer], { type: 'video/mp4' });
+        const downloadUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = downloadUrl;
-        a.download = `corte_${Date.now()}.mp4`;
+        a.download = `corte_${file.name}`;
         document.body.appendChild(a);
         a.click();
         a.remove();
-        window.URL.revokeObjectURL(downloadUrl);
+
+        statusDiv.style.color = '#4ade80';
+        statusDiv.innerText = 'Corte concluído com sucesso!';
 
       } catch (err) {
         statusDiv.style.color = '#f87171';
-        statusDiv.innerText = `Erro: ${err.message}`;
+        statusDiv.innerText = 'Erro ao processar arquivo: ' + err.message;
       } finally {
         submitBtn.disabled = false;
-        submitBtn.innerText = 'Processar e Baixar';
+        submitBtn.innerText = 'Cortar e Salvar';
       }
     });
   </script>
