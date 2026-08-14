@@ -1,104 +1,63 @@
 import os
 import threading
-from kivy.lang import Builder
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
+from kivy.uix.progressbar import ProgressBar
 from kivy.clock import mainthread
 from kivy.utils import platform
-from kivymd.app import MDApp
 import yt_dlp
 
-KV = '''
-MDScreen:
-    md_bg_color: 0.07, 0.07, 0.07, 1
+class CortaMidiaLayout(BoxLayout):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.orientation = 'vertical'
+        self.padding = 20
+        self.spacing = 15
 
-    MDBoxLayout:
-        orientation: 'vertical'
-        padding: "20dp"
-        spacing: "15dp"
-        pos_hint: {"center_x": 0.5, "center_y": 0.5}
-        size_hint_y: None
-        height: self.minimum_height
+        # Titulo
+        self.add_widget(Label(text="✂️ CortaMídia Pro", font_size='24sp', bold=True, color=(0, 0.9, 0.4, 1), size_hint_y=None, height=40))
 
-        MDLabel:
-            text: "✂️ CortaMídia Pro"
-            font_style: "H4"
-            halign: "center"
-            theme_text_color: "Custom"
-            text_color: 0, 0.9, 0.4, 1
-            bold: True
+        # Input URL
+        self.url_input = TextInput(hint_text="Cole o link do vídeo (YouTube, Insta, TikTok)...", multiline=False, size_hint_y=None, height=50)
+        self.add_widget(self.url_input)
 
-        MDTextField:
-            id: url_input
-            hint_text: "Cole o link (YouTube, Instagram, TikTok)..."
-            mode: "rectangle"
+        # Minutagem
+        self.add_widget(Label(text="Minutagem do Corte (Início - Fim):", size_hint_y=None, height=20, color=(0.7, 0.7, 0.7, 1)))
+        
+        time_layout = BoxLayout(spacing=10, size_hint_y=None, height=50)
+        self.inicio_input = TextInput(hint_text="Início (ex: 01:20)", multiline=False)
+        self.fim_input = TextInput(hint_text="Fim (ex: 02:45)", multiline=False)
+        time_layout.add_widget(self.inicio_input)
+        time_layout.add_widget(self.fim_input)
+        self.add_widget(time_layout)
 
-        MDLabel:
-            text: "Minutagem do Corte (MM:SS):"
-            theme_text_color: "Hint"
-            font_style: "Caption"
+        # Botao
+        self.btn_baixar = Button(text="CORTAR E BAIXAR", background_color=(0, 0.9, 0.4, 1), bold=True, size_hint_y=None, height=50)
+        self.btn_baixar.bind(on_release=self.iniciar_download)
+        self.add_widget(self.btn_baixar)
 
-        MDBoxLayout:
-            spacing: "10dp"
-            size_hint_y: None
-            height: "60dp"
+        # Progresso
+        self.progress_bar = ProgressBar(max=100, size_hint_y=None, height=20)
+        self.add_widget(self.progress_bar)
 
-            MDTextField:
-                id: inicio_input
-                hint_text: "Início (ex: 01:20)"
-                mode: "rectangle"
+        # Status
+        self.status_label = Label(text="Aguardando...", color=(0.8, 0.8, 0.8, 1), size_hint_y=None, height=30)
+        self.add_widget(self.status_label)
 
-            MDTextField:
-                id: fim_input
-                hint_text: "Fim (ex: 02:45)"
-                mode: "rectangle"
-
-        MDRaisedButton:
-            id: btn_baixar
-            text: "CORTAR E BAIXAR"
-            md_bg_color: 0, 0.9, 0.4, 1
-            text_color: 0, 0, 0, 1
-            size_hint_x: 1
-            height: "50dp"
-            on_release: app.iniciar_download()
-
-        MDProgressBar:
-            id: progress_bar
-            value: 0
-            color: 0, 0.9, 0.4, 1
-
-        MDLabel:
-            id: status_label
-            text: "Aguardando..."
-            halign: "center"
-            theme_text_color: "Custom"
-            text_color: 0.7, 0.7, 0.7, 1
-'''
-
-class CortaMidiaApp(MDApp):
-    def build(self):
-        self.theme_cls.theme_style = "Dark"
-        self.theme_cls.primary_palette = "Green"
-        return Builder.load_string(KV)
-
-    def on_start(self):
-        # Solicita permissoes no Android ao abrir o app
-        if platform == 'android':
-            from android.permissions import request_permissions, Permission
-            request_permissions([
-                Permission.WRITE_EXTERNAL_STORAGE,
-                Permission.READ_EXTERNAL_STORAGE
-            ])
-
-    def iniciar_download(self):
-        url = self.root.ids.url_input.text.strip()
-        inicio = self.root.ids.inicio_input.text.strip()
-        fim = self.root.ids.fim_input.text.strip()
+    def iniciar_download(self, instance):
+        url = self.url_input.text.strip()
+        inicio = self.inicio_input.text.strip()
+        fim = self.fim_input.text.strip()
 
         if not url:
-            self.root.ids.status_label.text = "Por favor, insira o link!"
+            self.status_label.text = "Por favor, insira o link!"
             return
 
-        self.root.ids.btn_baixar.disabled = True
-        self.root.ids.status_label.text = "Iniciando corte..."
+        self.btn_baixar.disabled = True
+        self.status_label.text = "Iniciando corte..."
         threading.Thread(target=self._processar_corte, args=(url, inicio, fim), daemon=True).start()
 
     def _processar_corte(self, url, inicio, fim):
@@ -137,12 +96,16 @@ class CortaMidiaApp(MDApp):
 
     @mainthread
     def atualizar_progresso(self, valor, texto):
-        self.root.ids.progress_bar.value = valor
-        self.root.ids.status_label.text = texto
+        self.progress_bar.value = valor
+        self.status_label.text = texto
 
     @mainthread
     def liberar_botao(self):
-        self.root.ids.btn_baixar.disabled = False
+        self.btn_baixar.disabled = False
+
+class CortaMidiaApp(App):
+    def build(self):
+        return CortaMidiaLayout()
 
 if __name__ == '__main__':
     CortaMidiaApp().run()
