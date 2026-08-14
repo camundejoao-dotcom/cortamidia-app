@@ -1,29 +1,26 @@
 name: Gerar APK
-
-on:
-  push:
-    branches: [ "main", "master" ]
+on: [push]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
-
-    - name: Configurar Java 17
-      uses: actions/setup-java@v3
+    
+    - name: Configurar Java
+      uses: actions/setup-java@v4
       with:
-        distribution: 'temurin'
         java-version: '17'
-
-    - name: Validar e Executar Build Gradle
-      run: |
-        gradle init --type basic || true
-        gradle assembleDebug
-
+        distribution: 'temurin'
+        
+    - name: Rodar Build Gradle
+      uses: gradle/gradle-build-action@v3
+      with:
+        arguments: assembleDebug
+        
     - name: Enviar APK Gerado
       uses: actions/upload-artifact@v4
       with:
         name: app-debug-apk
         path: app/build/outputs/apk/debug/app-debug.apk
+        
