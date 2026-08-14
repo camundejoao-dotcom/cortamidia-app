@@ -30,6 +30,8 @@ jobs:
         cordova create myApp com.cortamidia.app CortaMidia
         cd myApp
         cordova platform add android
+        # Plugin para rodar em http://localhost e liberar SharedArrayBuffer
+        cordova plugin add cordova-plugin-ionic-webview
         rm -rf www/*
         cp -r ../templates/* www/ 2>/dev/null || cp ../index.html www/
 
