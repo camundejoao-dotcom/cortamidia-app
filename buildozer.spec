@@ -6,17 +6,16 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 1.0
 
-# Apenas requisitos Python puros (garante build rapido e sem erros de C/C++)
-requirements = python3,kivy==2.2.1,kivymd==1.1.1,yt_dlp
+# Requisitos flexíveis para não dar conflito de compilação C
+requirements = python3,kivy,kivymd,yt_dlp
 
 orientation = portrait
 fullscreen = 0
 
-# Permissoes e APIs
+# Permissões do Android
 android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 android.api = 33
 android.minapi = 21
-android.ndk = 25b
 android.accept_sdk_license = True
 
 [buildozer]
