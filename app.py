@@ -1,31 +1,37 @@
-from flask import Flask, render_template, request, jsonify
-import yt_dlp
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import subprocess
+import os
 
 app = Flask(__name__)
+CORS(app) # Permite requisições vindas do APK
 
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-@app.route('/download', methods=['POST'])
-def download():
+@app.route('/cut', methods=['POST'])
+def cut_video():
     data = request.json
-    url = data.get('url')
+    video_url = data.get('url')
+    start_time = data.get('start', '00:00:00')
+    end_time = data.get('end')
+
+    # Comando usando yt-dlp + ffmpeg para baixar apenas o trecho selecionado
+    output_filename = "corte_output.mp4"
     
-    if not url:
-        return jsonify({'success': False, 'message': 'Cole um link válido!'})
-
-    ydl_opts = {
-        'format': 'best',
-        'outtmpl': '/sdcard/Download/%(title)s.%(ext)s',
-    }
-
+    # Exemplo de comando otimizado com download direto do trecho
+    cmd = [
+        "yt-dlp",
+        "--download-sections", f"*{start_time}-{end_time}",
+        "-f", "mp4",
+        "-o", output_filename,
+        video_url,
+        "--force-overwrites"
+    ]
+    
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-        return jsonify({'success': True, 'message': 'Download concluído com sucesso!'})
+        subprocess.run(cmd, check=True)
+        # Aqui você pode retornar o link direto para download do arquivo gerado
+        return jsonify({"download_url": f"{request.host_url}download/{output_filename}"})
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
