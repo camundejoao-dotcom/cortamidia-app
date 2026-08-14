@@ -22,22 +22,22 @@ jobs:
     - name: Set up Android SDK
       uses: android-actions/setup-android@v3
 
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+
     - name: Create Native Android WebView Project
       run: |
         mkdir -p android-app/app/src/main/assets/www
         mkdir -p android-app/app/src/main/java/com/cortamidia/app
-        mkdir -p android-app/app/src/main/res/layout
         
-        # Copia os arquivos web do projeto para a pasta de assets do Android
+        # Copia os arquivos do app
         cp -r templates app.py main.py android-app/app/src/main/assets/www/ 2>/dev/null || true
         
-        # Cria o AndroidManifest.xml
+        # Manifest
         cat << 'EOF' > android-app/app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android"
             package="com.cortamidia.app">
             <uses-permission android:name="android.permission.INTERNET"/>
-            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
             <application
                 android:allowBackup="true"
                 android:icon="@mipmap/ic_launcher"
@@ -54,7 +54,7 @@ jobs:
         </manifest>
         EOF
 
-        # Cria a MainActivity Java com WebView
+        # MainActivity Java
         cat << 'EOF' > android-app/app/src/main/java/com/cortamidia/app/MainActivity.java
         package com.cortamidia.app;
 
@@ -78,13 +78,12 @@ jobs:
                 webView.setWebViewClient(new WebViewClient());
                 setContentView(webView);
                 
-                // Carrega o servidor local / html principal
                 webView.loadUrl("file:///android_asset/www/templates/index.html");
             }
         }
         EOF
 
-        # Configurações do Gradle
+        # Build Gradle da raiz do projeto Android
         cat << 'EOF' > android-app/build.gradle
         buildscript {
             repositories { google(); mavenCentral() }
@@ -116,10 +115,11 @@ jobs:
         }
         EOF
 
-    - name: Build APK with Gradle
-      run: |
-        cd android-app
-        gradle assembleDebug
+    - name: Build APK with Gradle Action
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        build-root-directory: android-app
+        arguments: assembleDebug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
