@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Corta Mídia Offline</title>
     
-    <!-- Carrega o FFmpeg.wasm v0.11.6 compatível com WebView local -->
+    <!-- Habilita Cross-Origin Isolation para liberar o SharedArrayBuffer em WebViews locais -->
+    <script src="https://unpkg.com/coi-serviceworker@0.1.7/coi-serviceworker.min.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 
     <style>
@@ -126,7 +127,6 @@
         <h1>Corta Mídia Offline</h1>
 
         <div class="file-dropzone">
-            <!-- Hack do label para acionar o seletor nativo do Android -->
             <label for="videoInput" id="fileLabel">📁 Selecionar Vídeo</label>
             <input type="file" id="videoInput" accept="video/*">
         </div>
@@ -149,8 +149,6 @@
 
     <script>
         const { createFFmpeg, fetchFile } = FFmpeg;
-        
-        // Instancia sem opções adicionais para forçar o modo single-thread
         const ffmpeg = createFFmpeg({ log: true });
 
         const videoInput = document.getElementById('videoInput');
@@ -158,7 +156,6 @@
         const status = document.getElementById('status');
         const cutBtn = document.getElementById('cutBtn');
 
-        // Atualiza a interface quando o arquivo for selecionado
         videoInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
@@ -186,19 +183,15 @@
 
                 status.innerText = "Processando vídeo...";
 
-                // Escreve o arquivo selecionado na memória virtual do FFmpeg
                 const fileName = file.name;
                 const outputName = `corte_${Date.now()}.mp4`;
 
                 ffmpeg.FS('writeFile', fileName, await fetchFile(file));
 
-                // Executa o comando de corte rápido usando cópia de stream (-c copy)
                 await ffmpeg.run('-i', fileName, '-ss', start, '-to', end, '-c', 'copy', outputName);
 
-                // Lê o resultado da memória virtual
                 const data = ffmpeg.FS('readFile', outputName);
 
-                // Cria o link automático para baixar/salvar no celular
                 const blob = new Blob([data.buffer], { type: 'video/mp4' });
                 const url = URL.createObjectURL(blob);
                 
@@ -211,7 +204,6 @@
 
                 status.innerText = "Vídeo cortado e salvo com sucesso!";
 
-                // Limpa a memória interna
                 ffmpeg.FS('unlink', fileName);
                 ffmpeg.FS('unlink', outputName);
 
