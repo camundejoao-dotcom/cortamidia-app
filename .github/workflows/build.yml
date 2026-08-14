@@ -1,126 +1,45 @@
-name: Build Android APK
+name: Build Cordova APK
 
 on:
   push:
-    branches: [ main, master ]
-  workflow_dispatch:
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v3
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
       with:
-        java-version: '17'
-        distribution: 'temurin'
+        node-version: '18'
 
-    - name: Set up Android SDK
-      uses: android-actions/setup-android@v3
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '11'
 
-    - name: Create Native Android WebView Project
+    - name: Install Cordova
+      run: npm install -g cordova
+
+    - name: Create Cordova Project
       run: |
-        mkdir -p android-app/app/src/main/assets/www
-        mkdir -p android-app/app/src/main/java/com/cortamidia/app
-        
-        # Copia arquivos web
-        cp -r templates app.py main.py android-app/app/src/main/assets/www/ 2>/dev/null || true
-        
-        # Manifest (usando ícone padrão do sistema)
-        cat << 'EOF' > android-app/app/src/main/AndroidManifest.xml
-        <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-            package="com.cortamidia.app">
-            <uses-permission android:name="android.permission.INTERNET"/>
-            <application
-                android:allowBackup="true"
-                android:icon="@android:drawable/sym_def_app_icon"
-                android:label="CortaMidia"
-                android:theme="@android:style/Theme.NoTitleBar">
-                <activity android:name=".MainActivity"
-                    android:exported="true">
-                    <intent-filter>
-                        <action android:name="android.intent.action.MAIN" />
-                        <category android:name="android.intent.category.LAUNCHER" />
-                    </intent-filter>
-                </activity>
-            </application>
-        </manifest>
-        EOF
+        cordova create myApp com.cortamidia.app CortaMidia
+        cd myApp
+        cordova platform add android
+        rm -rf www/*
+        cp -r ../templates/* www/ 2>/dev/null || cp ../index.html www/
 
-        # MainActivity Java
-        cat << 'EOF' > android-app/app/src/main/java/com/cortamidia/app/MainActivity.java
-        package com.cortamidia.app;
-
-        import android.app.Activity;
-        import android.os.Bundle;
-        import android.webkit.WebSettings;
-        import android.webkit.WebView;
-        import android.webkit.WebViewClient;
-
-        public class MainActivity extends Activity {
-            private WebView webView;
-
-            @Override
-            protected void onCreate(Bundle savedInstanceState) {
-                super.onCreate(savedInstanceState);
-                webView = new WebView(this);
-                WebSettings webSettings = webView.getSettings();
-                webSettings.setJavaScriptEnabled(true);
-                webSettings.setDomStorageEnabled(true);
-                webSettings.setAllowFileAccess(true);
-                webView.setWebViewClient(new WebViewClient());
-                setContentView(webView);
-                
-                webView.loadUrl("file:///android_asset/www/templates/index.html");
-            }
-        }
-        EOF
-
-        # Build Gradle
-        cat << 'EOF' > android-app/build.gradle
-        buildscript {
-            repositories { google(); mavenCentral() }
-            dependencies { classpath 'com.android.tools.build:gradle:8.1.1' }
-        }
-        allprojects {
-            repositories { google(); mavenCentral() }
-        }
-        EOF
-
-        cat << 'EOF' > android-app/settings.gradle
-        include ':app'
-        EOF
-
-        cat << 'EOF' > android-app/app/build.gradle
-        plugins {
-            id 'com.android.application'
-        }
-        android {
-            namespace 'com.cortamidia.app'
-            compileSdk 34
-            defaultConfig {
-                applicationId "com.cortamidia.app"
-                minSdk 21
-                targetSdk 34
-                versionCode 1
-                versionName "1.0"
-            }
-        }
-        EOF
-
-    - name: Build APK with Gradle
-      uses: gradle/actions/setup-gradle@v3
-      with:
-        gradle-version: '8.2'
-        build-root-directory: android-app
-        arguments: assembleDebug
+    - name: Build Android APK
+      run: |
+        cd myApp
+        cordova build android --no-telemetry
 
     - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
-        name: CortaMidia-APK
-        path: android-app/app/build/outputs/apk/debug/app-debug.apk
+        name: app-debug
+        path: myApp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
