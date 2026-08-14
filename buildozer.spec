@@ -6,14 +6,14 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 1.0
 
-# Dependencias essenciais incluindo ffmpeg nativo para android
-requirements = python3,kivy==2.2.1,kivymd==1.1.1,yt_dlp,ffmpegandroid
+# Requisitos limpos e 100% compativeis
+requirements = python3,kivy==2.2.1,kivymd==1.1.1,yt_dlp,ffmpeg-python
 
 orientation = portrait
 fullscreen = 0
 
-# Permissoes do Android
-android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, MANAGE_EXTERNAL_STORAGE
+# Permissoes e APIs do Android
+android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 android.api = 33
 android.minapi = 21
 android.ndk = 25b
