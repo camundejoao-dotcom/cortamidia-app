@@ -4,12 +4,12 @@ from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # Permite requisições vindas do WebView
+CORS(app)  # Permite requisições vindas do WebView frontend
 
 OUTPUT_FILE = "corte_output.mp4"
 
 def update_ytdlp():
-    """Garante que o yt-dlp esteja sempre na versão mais recente."""
+    """Garante que o yt-dlp esteja sempre atualizado na versão mais recente."""
     try:
         subprocess.run(["pip", "install", "--upgrade", "yt-dlp"], check=True)
     except Exception as e:
@@ -17,7 +17,7 @@ def update_ytdlp():
 
 @app.route("/cut", methods=["POST"])
 def cut_media():
-    # Garante atualização do yt-dlp antes do processamento
+    # Atualiza o yt-dlp antes de processar qualquer requisição
     update_ytdlp()
 
     data = request.json
@@ -28,16 +28,17 @@ def cut_media():
     if not url:
         return jsonify({"error": "URL não fornecida"}), 400
 
-    # Remove o arquivo anterior se existir
+    # Remove arquivo residual antigo, se houver
     if os.path.exists(OUTPUT_FILE):
         os.remove(OUTPUT_FILE)
 
-    # Comando otimizado para compatibilidade e corte preciso
+    # Comando otimizado com bypass de IP do YouTube (simulando cliente Android)
     cmd = [
         "yt-dlp",
         "--download-sections", f"*{start}-{end}",
         "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
         "--merge-output-format", "mp4",
+        "--extractor-args", "youtube:player_client=android,web",
         "-o", OUTPUT_FILE,
         "--force-overwrites",
         url
@@ -48,7 +49,7 @@ def cut_media():
         
         if result.returncode != 0:
             print("LOG DE ERRO DO YT-DLP:", result.stderr)
-            return jsonify({"error": f"Erro no processamento do vídeo: {result.stderr[-300:]}"}), 500
+            return jsonify({"error": f"Erro no processamento: {result.stderr[-300:]}"}), 500
 
         return send_file(
             OUTPUT_FILE,
