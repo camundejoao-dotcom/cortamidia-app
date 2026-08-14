@@ -1,37 +1,65 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import subprocess
 import os
+import subprocess
+from flask import Flask, request, send_file, jsonify
+from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app) # Permite requisições vindas do APK
+CORS(app)  # Permite requisições vindas do WebView
 
-@app.route('/cut', methods=['POST'])
-def cut_video():
+OUTPUT_FILE = "corte_output.mp4"
+
+def update_ytdlp():
+    """Garante que o yt-dlp esteja sempre na versão mais recente."""
+    try:
+        subprocess.run(["pip", "install", "--upgrade", "yt-dlp"], check=True)
+    except Exception as e:
+        print(f"Aviso ao atualizar yt-dlp: {e}")
+
+@app.route("/cut", methods=["POST"])
+def cut_media():
+    # Garante atualização do yt-dlp antes do processamento
+    update_ytdlp()
+
     data = request.json
-    video_url = data.get('url')
-    start_time = data.get('start', '00:00:00')
-    end_time = data.get('end')
+    url = data.get("url")
+    start = data.get("start", "00:00:00")
+    end = data.get("end", "00:00:10")
 
-    # Comando usando yt-dlp + ffmpeg para baixar apenas o trecho selecionado
-    output_filename = "corte_output.mp4"
-    
-    # Exemplo de comando otimizado com download direto do trecho
+    if not url:
+        return jsonify({"error": "URL não fornecida"}), 400
+
+    # Remove o arquivo anterior se existir
+    if os.path.exists(OUTPUT_FILE):
+        os.remove(OUTPUT_FILE)
+
+    # Comando otimizado para compatibilidade e corte preciso
     cmd = [
         "yt-dlp",
-        "--download-sections", f"*{start_time}-{end_time}",
-        "-f", "mp4",
-        "-o", output_filename,
-        video_url,
-        "--force-overwrites"
+        "--download-sections", f"*{start}-{end}",
+        "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "--merge-output-format", "mp4",
+        "-o", OUTPUT_FILE,
+        "--force-overwrites",
+        url
     ]
-    
+
     try:
-        subprocess.run(cmd, check=True)
-        # Aqui você pode retornar o link direto para download do arquivo gerado
-        return jsonify({"download_url": f"{request.host_url}download/{output_filename}"})
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        
+        if result.returncode != 0:
+            print("LOG DE ERRO DO YT-DLP:", result.stderr)
+            return jsonify({"error": f"Erro no processamento do vídeo: {result.stderr[-300:]}"}), 500
+
+        return send_file(
+            OUTPUT_FILE,
+            mimetype="video/mp4",
+            as_attachment=True,
+            download_name="corte.mp4"
+        )
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
