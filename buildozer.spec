@@ -6,13 +6,13 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 1.0
 
-# Incluído ffpyplayer para suporte nativo de mídia e libs base
-requirements = python3,kivy==2.2.1,yt_dlp,urllib3,certifi,chardet,idna
+# Requisitos Python puros e estaveis
+requirements = python3,kivy==2.2.1,yt_dlp,requests,urllib3,certifi,chardet,idna
 
 orientation = portrait
 fullscreen = 0
 
-# Permissões completas de mídia do Android
+# Permissoes Android
 android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 android.api = 33
 android.minapi = 21
