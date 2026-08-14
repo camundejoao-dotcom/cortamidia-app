@@ -6,16 +6,17 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 1.0
 
-# APENAS dependencias que o python-for-android sabe compilar!
-requirements = python3,kivy==2.2.1,yt-dlp,requests
+# Requisitos suportados sem quebrar compilador C
+requirements = python3,kivy==2.2.1,yt-dlp
 
 orientation = portrait
 fullscreen = 0
 
-# Permissoes Android
+# Permissoes e Versoes de SDK/NDK
 android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 android.api = 33
 android.minapi = 21
+android.ndk = 25b
 android.accept_sdk_license = True
 
 [buildozer]
