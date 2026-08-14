@@ -28,9 +28,6 @@ jobs:
         python -m pip install --upgrade pip setuptools
         pip install "cython<3.0.0" buildozer
 
-    - name: Ensure bin directory exists
-      run: mkdir -p bin
-
     - name: Build APK with Buildozer
       run: |
         yes | buildozer -v android debug
@@ -39,4 +36,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: CortaMidia-APK
-        path: bin/*.apk
+        path: "**/*.apk"
