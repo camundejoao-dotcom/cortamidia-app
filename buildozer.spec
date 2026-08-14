@@ -6,13 +6,13 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 1.0
 
-# Requisitos limpos e 100% compativeis
-requirements = python3,kivy==2.2.1,kivymd==1.1.1,yt_dlp,ffmpeg-python
+# Apenas requisitos Python puros (garante build rapido e sem erros de C/C++)
+requirements = python3,kivy==2.2.1,kivymd==1.1.1,yt_dlp
 
 orientation = portrait
 fullscreen = 0
 
-# Permissoes e APIs do Android
+# Permissoes e APIs
 android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 android.api = 33
 android.minapi = 21
