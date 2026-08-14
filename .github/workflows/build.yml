@@ -14,13 +14,10 @@ jobs:
         distribution: 'temurin'
         
     - name: Rodar Build Gradle
-      uses: gradle/gradle-build-action@v3
-      with:
-        arguments: assembleDebug
+      run: gradle assembleDebug --no-daemon
         
     - name: Enviar APK Gerado
       uses: actions/upload-artifact@v4
       with:
         name: app-debug-apk
         path: app/build/outputs/apk/debug/app-debug.apk
-        
