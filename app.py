@@ -32,13 +32,13 @@ def cut_media():
     if os.path.exists(OUTPUT_FILE):
         os.remove(OUTPUT_FILE)
 
-    # Comando otimizado com bypass de IP do YouTube (simulando cliente Android)
+    # Comando configurado para usar APIs do iOS e Web Mobile (bypassa bloqueio de IP do Render)
     cmd = [
         "yt-dlp",
         "--download-sections", f"*{start}-{end}",
         "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
         "--merge-output-format", "mp4",
-        "--extractor-args", "youtube:player_client=android,web",
+        "--extractor-args", "youtube:player_client=ios,mweb",
         "-o", OUTPUT_FILE,
         "--force-overwrites",
         url
