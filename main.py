@@ -2,6 +2,7 @@ import os
 import threading
 from kivy.lang import Builder
 from kivy.clock import mainthread
+from kivy.utils import platform
 from kivymd.app import MDApp
 import yt_dlp
 
@@ -27,7 +28,7 @@ MDScreen:
 
         MDTextField:
             id: url_input
-            hint_text: "Cole o link do YouTube..."
+            hint_text: "Cole o link (YouTube, Instagram, TikTok)..."
             mode: "rectangle"
 
         MDLabel:
@@ -77,6 +78,15 @@ class CortaMidiaApp(MDApp):
         self.theme_cls.theme_style = "Dark"
         self.theme_cls.primary_palette = "Green"
         return Builder.load_string(KV)
+
+    def on_start(self):
+        # Solicita permissoes no Android ao abrir o app
+        if platform == 'android':
+            from android.permissions import request_permissions, Permission
+            request_permissions([
+                Permission.WRITE_EXTERNAL_STORAGE,
+                Permission.READ_EXTERNAL_STORAGE
+            ])
 
     def iniciar_download(self):
         url = self.root.ids.url_input.text.strip()
