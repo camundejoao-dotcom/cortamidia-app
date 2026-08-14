@@ -3,76 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CortaMídia</title>
+    <title>CortaMídia 🎬</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: #121212;
             color: #ffffff;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             padding: 20px;
+            box-sizing: border-box;
         }
-        h1 { color: #ff3e3e; }
-        input {
+        .container {
             width: 100%;
             max-width: 400px;
+            text-align: center;
+        }
+        h1 {
+            color: #ff3b30;
+            font-size: 2.2rem;
+            margin-bottom: 25px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        label {
+            display: block;
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
             padding: 12px;
-            margin: 10px 0;
             border-radius: 8px;
             border: 1px solid #333;
-            background: #222;
+            background-color: #1e1e1e;
             color: #fff;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        .time-range {
+            display: flex;
+            gap: 10px;
+        }
+        .time-range .input-group {
+            flex: 1;
         }
         button {
             width: 100%;
-            max-width: 424px;
-            padding: 12px;
-            background-color: #ff3e3e;
+            padding: 14px;
+            background-color: #ff3b30;
             color: white;
             border: none;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 1.1rem;
+            font-weight: bold;
             cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s;
         }
-        #status { margin-top: 15px; font-size: 14px; color: #ccc; }
+        button:active {
+            background-color: #d72b21;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 0.95rem;
+            color: #aaa;
+        }
     </style>
 </head>
 <body>
+
+<div class="container">
     <h1>CortaMídia 🎬</h1>
-    <p>Cole o link do vídeo para baixar:</p>
-    <input type="text" id="urlInput" placeholder="https://www.youtube.com/watch?v=...">
-    <button onclick="baixar()">Baixar Vídeo</button>
+    
+    <div class="input-group">
+        <label for="url">Link do Vídeo (YouTube)</label>
+        <input type="text" id="url" placeholder="https://youtu.be/...">
+    </div>
+
+    <div class="time-range">
+        <div class="input-group">
+            <label for="start">Início (HH:MM:SS)</label>
+            <input type="text" id="start" placeholder="00:01:30">
+        </div>
+        <div class="input-group">
+            <label for="end">Fim (HH:MM:SS)</label>
+            <input type="text" id="end" placeholder="00:02:15">
+        </div>
+    </div>
+
+    <button onclick="baixarCorte()">Cortar e Baixar</button>
+
     <div id="status"></div>
+</div>
 
-    <script>
-        async function baixar() {
-            const url = document.getElementById('urlInput').value;
-            const status = document.getElementById('status');
-            
-            if(!url) {
-                status.innerText = "Por favor, cole uma URL.";
-                return;
-            }
+<script>
+    // IMPORTANTE: Subtitua pela URL pública do seu servidor após hospedá-lo
+    const API_URL = "https://seu-servidor.onrender.com";
 
-            status.innerText = "Baixando vídeo... Aguarde!";
-            
-            try {
-                const response = await fetch('/download', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: url })
-                });
-                const res = await response.json();
-                status.innerText = res.message;
-            } catch(e) {
-                status.innerText = "Erro ao se conectar ao servidor local.";
-            }
+    async function baixarCorte() {
+        const url = document.getElementById('url').value.trim();
+        const start = document.getElementById('start').value.trim();
+        const end = document.getElementById('end').value.trim();
+        const statusDiv = document.getElementById('status');
+
+        if (!url) {
+            alert('Por favor, cole a URL do vídeo.');
+            return;
         }
-    </script>
+
+        statusDiv.innerText = "Processando o corte no servidor... Aguarde.";
+
+        try {
+            const response = await fetch(`${API_URL}/cut`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url, start, end })
+            });
+
+            if (!response.ok) {
+                throw new Error("Erro no processamento do vídeo.");
+            }
+
+            const data = await response.json();
+            statusDiv.innerHTML = `<a href="${data.download_url}" target="_blank" style="color: #ff3b30; text-decoration: underline;">Clique aqui para baixar seu arquivo</a>`;
+        } catch (err) {
+            statusDiv.innerText = "Erro ao conectar com o servidor ou processar o vídeo.";
+        }
+    }
+</script>
+
 </body>
 </html>
