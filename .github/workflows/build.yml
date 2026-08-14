@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout Repository
@@ -21,16 +21,16 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y ccache git libffi-dev libssl-dev build-essential ffmpeg libsqlite3-dev zip unzip
+        sudo apt-get install -y ccache git libffi-dev libssl-dev build-essential ffmpeg libsqlite3-dev zip unzip openjdk-17-jdk
 
-    - name: Install Python dependencies
+    - name: Install Python build tools
       run: |
         python -m pip install --upgrade pip setuptools
-        pip install buildozer cython
+        pip install "cython<3.0.0" buildozer
 
     - name: Build APK with Buildozer
       run: |
-        buildozer -v android debug
+        yes | buildozer -v android debug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
