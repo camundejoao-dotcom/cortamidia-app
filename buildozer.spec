@@ -6,8 +6,8 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 1.0
 
-# Requisitos Python puros e estaveis
-requirements = python3,kivy==2.2.1,yt_dlp,requests,urllib3,certifi,chardet,idna
+# APENAS dependencias que o python-for-android sabe compilar!
+requirements = python3,kivy==2.2.1,yt-dlp,requests
 
 orientation = portrait
 fullscreen = 0
