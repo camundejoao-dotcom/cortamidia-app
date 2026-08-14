@@ -22,15 +22,12 @@ jobs:
     - name: Set up Android SDK
       uses: android-actions/setup-android@v3
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
-
     - name: Create Native Android WebView Project
       run: |
         mkdir -p android-app/app/src/main/assets/www
         mkdir -p android-app/app/src/main/java/com/cortamidia/app
         
-        # Copia os arquivos do app
+        # Copia arquivos web
         cp -r templates app.py main.py android-app/app/src/main/assets/www/ 2>/dev/null || true
         
         # Manifest
@@ -83,7 +80,7 @@ jobs:
         }
         EOF
 
-        # Build Gradle da raiz do projeto Android
+        # Build Gradle
         cat << 'EOF' > android-app/build.gradle
         buildscript {
             repositories { google(); mavenCentral() }
@@ -115,9 +112,10 @@ jobs:
         }
         EOF
 
-    - name: Build APK with Gradle Action
+    - name: Build APK with Gradle
       uses: gradle/actions/setup-gradle@v3
       with:
+        gradle-version: '8.2'
         build-root-directory: android-app
         arguments: assembleDebug
 
